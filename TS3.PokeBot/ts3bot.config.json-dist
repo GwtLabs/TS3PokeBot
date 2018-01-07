@@ -4,18 +4,10 @@
     "Port": 9987,
     "QueryPort": 11011,
     "Login": "serveradmin",
-    "Password": "RluiPgfz"
+    "Password": ""
   },
   "Bot": {
     "Name": "[Bot] AutoPoke",
-    "DefaultChannelId": 2
-  },
-  "AutoPoke": {
-    "Channels": {
-      "0": {
-        "Groups": []
-      }
-    },
-    "Enabled": true
+    "DefaultChannelId": 1
   }
 }
