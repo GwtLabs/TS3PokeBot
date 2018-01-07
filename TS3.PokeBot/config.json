@@ -1,0 +1,21 @@
+{
+  "Server": {
+    "Host": "localhost",
+    "Port": 9987,
+    "QueryPort": 11011,
+    "Login": "serveradmin",
+    "Password": "RluiPgfz"
+  },
+  "Bot": {
+    "Name": "[Bot] AutoPoke",
+    "DefaultChannelId": 2
+  },
+  "AutoPoke": {
+    "Channels": {
+      "0": {
+        "Groups": []
+      }
+    },
+    "Enabled": true
+  }
+}

@@ -19,8 +19,32 @@ namespace TS3.PokeBot
 {
     public static class Configuration
     {
+        private static bool Initialization = false;
+        private readonly static string configPath = "config.json";
+
+        public static Config Get()
+        {
+            var config = Read(configPath);
+
+            if (config == null)
+            {
+                Initialization = true;
+                config = new Config();
+                Write(configPath, config);
+                Console.WriteLine("Config file not exist! Generated new one!");
+            }
+            // TODO: Zapisywać tylko w wypadku, gdy plik jest niekompletny
+            Write(configPath, config);
+
+            return config;
+        }
+
         public static Config Read(string path)
         {
+            if (!System.IO.File.Exists(path))
+            {
+                return null;
+            }
             return JsonConvert.DeserializeObject<Config>(System.IO.File.ReadAllText(path));
         }
 
@@ -29,24 +53,58 @@ namespace TS3.PokeBot
             System.IO.File.WriteAllText(path, JsonConvert.SerializeObject(config, Formatting.Indented));
         }
 
+        public class Config
+        {
+            public Config()
+            {
+                Server = new Server();
+                Bot = new Bot();
+                AutoPoke = new AutoPoke();
+            }
+            public Server Server { get; set; }
+            public Bot Bot { get; set; }
+            public AutoPoke AutoPoke { get; set; }
+        }
+
         public class Server
         {
             public string Host { get; set; } = "localhost";
-            public int Port { get; set; } = 9987;
-            public int QueryPort { get; set; } = 11011;
+            public ushort Port { get; set; } = 9987;
+            public ushort QueryPort { get; set; } = 11011;
             public string Login { get; set; } = "serveradmin";
             public string Password { get; set; } = "";
         }
 
-        public class Client
+        public class Bot
         {
             public string Name { get; set; } = "[Bot] AutoPoke";
+            public ushort DefaultChannelId { get; set; } = 2;
         }
 
-        public class Config
+        public class AutoPoke
         {
-            public Server Server { get; set; }
-            public Client Client { get; set; }
+            public AutoPoke()
+            {
+                if (Initialization)
+                    Channels = new Dictionary<ushort, AutoPokeConfig>() { { 0, new AutoPokeConfig() } };
+            }
+            public bool Enabled { get; set; } = true;
+            public Dictionary<ushort, AutoPokeConfig> Channels = new Dictionary<ushort, AutoPokeConfig>();
+        }
+        public class AutoPokeConfig
+        {
+            public AutoPokeConfig()
+            {
+                if (Initialization)
+                    Groups = new List<AutoPokeGroup>() { new AutoPokeGroup() };
+            }
+            public List<AutoPokeGroup> Groups = new List<AutoPokeGroup>();
+        }
+        public class AutoPokeGroup
+        {
+            public ushort Id { get; set; }
+            public int DelayRelative { get; set; } = 0;
+            public int DelayAbsolute { get; set; } = 0;
         }
     }
 
@@ -54,11 +112,8 @@ namespace TS3.PokeBot
     {
         public static void Main(string[] args)
         {
-            var config = Configuration.Read("config");
-
-
-
-
+            var config = Configuration.Get();
+           new ConfigurationBuilder();
             NotificationHub notifications = new NotificationHub();
             notifications.ClientJoined.Triggered += ClientJoined_Triggered;
             notifications.ClientLeft.Kicked += ClientLeft_Kicked;
@@ -82,14 +137,14 @@ namespace TS3.PokeBot
             notifications.UnknownNotificationReceived.Triggered += UnknownNotificationReceived_Triggered;
 
             // The client is configured to send a heartbeat every 30 seconds, the default is not to send a keep alive
-            IQueryClient client = new QueryClient(notificationHub: notifications, keepAliveInterval: TimeSpan.FromSeconds(30), host: "localhost");
+            IQueryClient client = new QueryClient(notificationHub: notifications, keepAliveInterval: TimeSpan.FromSeconds(30), host: config.Server.Host, port: config.Server.QueryPort);
             client.BanDetected += Client_BanDetected;
             client.ConnectionClosed += Client_ConnectionClosed;
             Connect(client);
 
             // username and password are random and only valid on my dev box. So dont bother
-            Console.WriteLine("Admin login:" + !new LoginCommand("serveradmin", "RluiPgfz").Execute(client).IsErroneous);
-            Console.WriteLine("Switch to server with port 9987: " + !new UseCommand(9987).Execute(client).IsErroneous);
+            Console.WriteLine("Admin login:" + !new LoginCommand(config.Server.Login, config.Server.Password).Execute(client).IsErroneous);
+            Console.WriteLine("Switch to server with port 9987: " + !new UseCommand(config.Server.Port).Execute(client).IsErroneous);
 
             Console.WriteLine("Register notify [Server]: " + !new ServerNotifyRegisterCommand(ServerNotifyRegisterEvent.Server).Execute(client).IsErroneous);
             Console.WriteLine("Register notify [Channel]: " + !new ServerNotifyRegisterCommand(ServerNotifyRegisterEvent.Channel, 0).Execute(client).IsErroneous); // 0 = all channels
