@@ -8,14 +8,57 @@ using TS3QueryLib.Net.Core.Common.Responses;
 using TS3QueryLib.Net.Core.Server.Commands;
 using TS3QueryLib.Net.Core.Server.Entitities;
 using TS3QueryLib.Net.Core.Server.Notification;
+using ea = TS3QueryLib.Net.Core.Server.Notification.EventArgs;
 using TS3QueryLib.Net.Core.Server.Responses;
+
+using System.Configuration;
+using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace TS3.PokeBot
 {
-   public class Program
+    public static class Configuration
     {
-      public  static void Main(string[] args)
+        public static Config Read(string path)
         {
+            return JsonConvert.DeserializeObject<Config>(System.IO.File.ReadAllText(path));
+        }
+
+        public static void Write(string path, Config config)
+        {
+            System.IO.File.WriteAllText(path, JsonConvert.SerializeObject(config, Formatting.Indented));
+        }
+
+        public class Server
+        {
+            public string Host { get; set; } = "localhost";
+            public int Port { get; set; } = 9987;
+            public int QueryPort { get; set; } = 11011;
+            public string Login { get; set; } = "serveradmin";
+            public string Password { get; set; } = "";
+        }
+
+        public class Client
+        {
+            public string Name { get; set; } = "[Bot] AutoPoke";
+        }
+
+        public class Config
+        {
+            public Server Server { get; set; }
+            public Client Client { get; set; }
+        }
+    }
+
+    public class Program
+    {
+        public static void Main(string[] args)
+        {
+            var config = Configuration.Read("config");
+
+
+
+
             NotificationHub notifications = new NotificationHub();
             notifications.ClientJoined.Triggered += ClientJoined_Triggered;
             notifications.ClientLeft.Kicked += ClientLeft_Kicked;
@@ -45,7 +88,7 @@ namespace TS3.PokeBot
             Connect(client);
 
             // username and password are random and only valid on my dev box. So dont bother
-            Console.WriteLine("Admin login:" + !new LoginCommand("serveradmin", "RWkzzXu9").Execute(client).IsErroneous);
+            Console.WriteLine("Admin login:" + !new LoginCommand("serveradmin", "RluiPgfz").Execute(client).IsErroneous);
             Console.WriteLine("Switch to server with port 9987: " + !new UseCommand(9987).Execute(client).IsErroneous);
 
             Console.WriteLine("Register notify [Server]: " + !new ServerNotifyRegisterCommand(ServerNotifyRegisterEvent.Server).Execute(client).IsErroneous);
@@ -98,102 +141,102 @@ namespace TS3.PokeBot
             Console.ResetColor();
         }
 
-        private static void UnknownNotificationReceived_Triggered(object sender, Server.Notification.EventArgs.UnknownNotificationEventArgs e)
+        private static void UnknownNotificationReceived_Triggered(object sender, ea.UnknownNotificationEventArgs e)
         {
             Console.WriteLine($"Unknown notification: [Name:{e.Name}] [ResponseText:{e.ResponseText}]");
         }
 
-        private static void ServerEdited_Triggered(object sender, Server.Notification.EventArgs.ServerEditedEventArgs e)
+        private static void ServerEdited_Triggered(object sender, ea.ServerEditedEventArgs e)
         {
             Console.WriteLine($"Server Edit: Server was edited by {e.InvokerName} for reason with id {e.ReasonId}");
         }
 
-        private static void ChannelPasswordChanged_Triggered(object sender, Server.Notification.EventArgs.ChannelPasswordChangedEventArgs e)
+        private static void ChannelPasswordChanged_Triggered(object sender, ea.ChannelPasswordChangedEventArgs e)
         {
             Console.WriteLine($"Channel password changed: Channel password of channel with id {e.ChannelId} has changed.");
         }
 
-        private static void ChannelDescriptionChanged_Triggered(object sender, Server.Notification.EventArgs.ChannelDescriptionChangedEventArgs e)
+        private static void ChannelDescriptionChanged_Triggered(object sender, ea.ChannelDescriptionChangedEventArgs e)
         {
             Console.WriteLine($"Channel description changed: Channel description of channel with id {e.ChannelId} has changed.");
         }
 
-        private static void ChannelDeleted_Triggered(object sender, Server.Notification.EventArgs.ChannelDeletedEventArgs e)
+        private static void ChannelDeleted_Triggered(object sender, ea.ChannelDeletedEventArgs e)
         {
             Console.WriteLine($"Channel Delete: Channel with Id {e.ChannelId} was deleted by {e.InvokerName}. Deleted Sub-Channel-Ids: {string.Join(",", e.SubChannelIdList)}");
         }
 
-        private static void ChannelMoved_Triggered(object sender, Server.Notification.EventArgs.ChannelMovedEventArgs e)
+        private static void ChannelMoved_Triggered(object sender, ea.ChannelMovedEventArgs e)
         {
             Console.WriteLine($"Channel move: Channel with Id {e.ChannelId}, parent channel id {e.ParentChannelId} and order {e.Order} was moved by {e.InvokerName} for reason with id  {e.ReasonId}");
         }
 
-        private static void ChannelCreated_Triggered(object sender, Server.Notification.EventArgs.ChannelCreatedEventArgs e)
+        private static void ChannelCreated_Triggered(object sender, ea.ChannelCreatedEventArgs e)
         {
             Console.WriteLine($"Channel Create: Channel with Id {e.ChannelId} was created by {e.InvokerName}");
         }
 
-        private static void ChannelEdited_Triggered(object sender, Server.Notification.EventArgs.ChannelEditedEventArgs e)
+        private static void ChannelEdited_Triggered(object sender, ea.ChannelEditedEventArgs e)
         {
             Console.WriteLine($"Channel Edit: Channel with Id {e.ChannelId} was edited by {e.InvokerName} for reason with id {e.ReasonId}");
         }
 
-        private static void TokenUsed_Triggered(object sender, Server.Notification.EventArgs.TokenUsedEventArgs e)
+        private static void TokenUsed_Triggered(object sender, ea.TokenUsedEventArgs e)
         {
             Console.WriteLine($"Token-Usage: ClientId:{e.ClientId}, Token={e.TokenText}");
         }
 
-        private static void ClientMoved_JoiningChannelForced(object sender, Server.Notification.EventArgs.ClientMovedByClientEventArgs e)
+        private static void ClientMoved_JoiningChannelForced(object sender, ea.ClientMovedByClientEventArgs e)
         {
             Console.WriteLine($"Move: Type=Forced, ClientId={e.ClientId}, TargetChannelId={e.TargetChannelId}, Invoker={e.InvokerNickname}");
         }
 
-        private static void ClientMoved_CreatingTemporaryChannel(object sender, Server.Notification.EventArgs.ClientMovedEventArgs e)
+        private static void ClientMoved_CreatingTemporaryChannel(object sender, ea.ClientMovedEventArgs e)
         {
             Console.WriteLine($"Move: Type=TempChannel, ClientId={e.ClientId}, TargetChannelId={e.TargetChannelId}");
         }
 
-        private static void ClientMoved_JoiningChannel(object sender, Server.Notification.EventArgs.ClientMovedEventArgs e)
+        private static void ClientMoved_JoiningChannel(object sender, ea.ClientMovedEventArgs e)
         {
             Console.WriteLine($"Move: Type=Self, ClientId={e.ClientId}, TargetChannelId={e.TargetChannelId}");
         }
 
-        private static void ClientMessage_ReceivedFromServer(object sender, Server.Notification.EventArgs.MessageReceivedEventArgs e)
+        private static void ClientMessage_ReceivedFromServer(object sender, ea.MessageReceivedEventArgs e)
         {
             Console.WriteLine($"[Server] Message from {e.InvokerNickname}: {e.Message}");
         }
 
-        private static void ClientMessage_ReceivedFromChannel(object sender, Server.Notification.EventArgs.MessageReceivedEventArgs e)
+        private static void ClientMessage_ReceivedFromChannel(object sender, ea.MessageReceivedEventArgs e)
         {
             Console.WriteLine($"[Channel] Message from {e.InvokerNickname}: {e.Message}");
         }
 
-        private static void ClientMessage_ReceivedFromClient(object sender, Server.Notification.EventArgs.MessageReceivedEventArgs e)
+        private static void ClientMessage_ReceivedFromClient(object sender, ea.MessageReceivedEventArgs e)
         {
             Console.WriteLine($"[Client] Message from {e.InvokerNickname}: {e.Message}");
         }
 
-        private static void ClientLeft_Banned(object sender, Server.Notification.EventArgs.ClientBanEventArgs e)
+        private static void ClientLeft_Banned(object sender, ea.ClientBanEventArgs e)
         {
             Console.WriteLine($"Banned: {e.VictimClientId}");
         }
 
-        private static void ClientLeft_ConnectionLost(object sender, Server.Notification.EventArgs.ClientConnectionLostEventArgs e)
+        private static void ClientLeft_ConnectionLost(object sender, ea.ClientConnectionLostEventArgs e)
         {
             Console.WriteLine($"Connection lost: {e.ClientId}");
         }
 
-        private static void ClientLeft_Disconnected(object sender, Server.Notification.EventArgs.ClientDisconnectEventArgs e)
+        private static void ClientLeft_Disconnected(object sender, ea.ClientDisconnectEventArgs e)
         {
             Console.WriteLine($"Disconnected: {e.ClientId}");
         }
 
-        private static void ClientLeft_Kicked(object sender, Server.Notification.EventArgs.ClientKickEventArgs e)
+        private static void ClientLeft_Kicked(object sender, ea.ClientKickEventArgs e)
         {
             Console.WriteLine($"Kicked: {e.VictimClientId}");
         }
 
-        private static void ClientJoined_Triggered(object sender, Server.Notification.EventArgs.ClientJoinedEventArgs e)
+        private static void ClientJoined_Triggered(object sender, ea.ClientJoinedEventArgs e)
         {
             Console.WriteLine($"Joined: {e.Nickname}");
         }
